@@ -373,8 +373,8 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
       maxWidth = face->glyph->bitmap.width;
   }
 
-  maxWidth = maxWidth / bpp_mul;
-  maxHeight = (maxAscent + maxDescent) / bpp_mul;
+  maxWidth = (maxWidth + (bpp_mul - 1)) / bpp_mul;
+  maxHeight = (maxAscent + maxDescent + (bpp_mul - 1)) / bpp_mul;
 
   switch(bitsPerPixel)
   {
@@ -420,14 +420,19 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
       exit(1);
     }
 
-    for (i = 0; i < face->glyph->bitmap.rows / bpp_mul; i++)
-      for (j = 0; j < face->glyph->bitmap.width / bpp_mul; j++) {
+    for (i = 0; i < (face->glyph->bitmap.rows + (bpp_mul - 1)) / bpp_mul; i++)
+      for (j = 0; j < (face->glyph->bitmap.width + (bpp_mul - 1))/ bpp_mul; j++) {
 
         coverage = 0;
 
         for(i_idx =0; i_idx < bpp_mul;i_idx++) {
+            if (i * bpp_mul + i_idx >= face->glyph->bitmap.rows) {
+                break;
+            }
             for(j_idx = 0; j_idx < bpp_mul;j_idx++) {
-
+                if (j * bpp_mul + j_idx >= face->glyph->bitmap.width) {
+                  break;
+                }
 
                 uint8_t *bits = (uint8_t *) face->glyph->bitmap.buffer;
                 uint8_t b = bits[(i*bpp_mul+i_idx) * face->glyph->bitmap.pitch + ((j*bpp_mul+j_idx) / 8)];
@@ -448,8 +453,8 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
 
         int xpos, ypos,ind;
 
-        xpos = j + (face->glyph->bitmap_left / bpp_mul);
-        ypos = (maxAscent/bpp_mul) + i - (face->glyph->bitmap_top / bpp_mul);
+        xpos = j + ((face->glyph->bitmap_left + (bpp_mul - 1)) / bpp_mul);
+        ypos = ((maxAscent + (bpp_mul - 1)) / bpp_mul) + i - ((face->glyph->bitmap_top + (bpp_mul - 1)) / bpp_mul);
 
 
         switch(bitsPerPixel)
