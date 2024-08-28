@@ -28,15 +28,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- /*
-  *  19.10.2017 jkpublic@kartech.biz - Added support for 8BPP fonts ( anti alliased)
-  *
-  */
+/*
+ *  19.10.2017 jkpublic@kartech.biz - Added support for 8BPP fonts ( anti alliased)
+ *
+ */
 
-
-#include <stdio.h>
-#include <getopt.h>
 #include <ft2build.h>
+#include <getopt.h>
+#include <stdio.h>
 
 #include FT_FREETYPE_H
 
@@ -55,23 +54,17 @@ static int maxChar = 126;
  * "draw" a pixel using ansi escape sequences.
  * Used for printing a ascii art sample of font.
  */
-static void drawPixel(UG_S16 x, UG_S16 y, UG_COLOR col)
-{
+static void drawPixel(UG_S16 x, UG_S16 y, UG_COLOR col) {
   printf("\033[%d;%dH", y + 1, x + 1);
 
   if (col == C_WHITE)
     printf("\x1B[0m ");
-  else
-  {
-    if(col == C_BLACK)
-    {
-        printf("\x1B[0m*");
+  else {
+    if (col == C_BLACK) {
+      printf("\x1B[0m*");
+    } else {
+      printf("\x1B[34m*");
     }
-    else
-    {
-        printf("\x1B[34m*");
-    }
-
   }
 
   fflush(stdout);
@@ -80,41 +73,36 @@ static void drawPixel(UG_S16 x, UG_S16 y, UG_COLOR col)
 /*
  * Convert unicode to UTF-8 string
  */
-int utf8_encode(char *out, uint32_t utf)
-{
+int utf8_encode(char* out, uint32_t utf) {
   if (utf <= 0x7F) {
     // Plain ASCII
     out[0] = (char) utf;
     out[1] = 0;
     return 1;
-  }
-  else if (utf <= 0x07FF) {
+  } else if (utf <= 0x07FF) {
     // 2-byte unicode
     out[0] = (char) (((utf >> 6) & 0x1F) | 0xC0);
     out[1] = (char) (((utf >> 0) & 0x3F) | 0x80);
     out[2] = 0;
     return 2;
-  }
-  else if (utf <= 0xFFFF) {
+  } else if (utf <= 0xFFFF) {
     // 3-byte unicode
     out[0] = (char) (((utf >> 12) & 0x0F) | 0xE0);
-    out[1] = (char) (((utf >>  6) & 0x3F) | 0x80);
-    out[2] = (char) (((utf >>  0) & 0x3F) | 0x80);
+    out[1] = (char) (((utf >> 6) & 0x3F) | 0x80);
+    out[2] = (char) (((utf >> 0) & 0x3F) | 0x80);
     out[3] = 0;
     return 3;
-  }
-  else if (utf <= 0x10FFFF) {
+  } else if (utf <= 0x10FFFF) {
     // 4-byte unicode
     out[0] = (char) (((utf >> 18) & 0x07) | 0xF0);
     out[1] = (char) (((utf >> 12) & 0x3F) | 0x80);
-    out[2] = (char) (((utf >>  6) & 0x3F) | 0x80);
-    out[3] = (char) (((utf >>  0) & 0x3F) | 0x80);
+    out[2] = (char) (((utf >> 6) & 0x3F) | 0x80);
+    out[3] = (char) (((utf >> 0) & 0x3F) | 0x80);
     out[4] = 0;
     return 4;
-  }
-  else { 
+  } else {
     // error - use replacement character
-    out[0] = (char) 0xEF;  
+    out[0] = (char) 0xEF;
     out[1] = (char) 0xBF;
     out[2] = (char) 0xBD;
     out[3] = 0;
@@ -122,8 +110,7 @@ int utf8_encode(char *out, uint32_t utf)
   }
 }
 
-static int max(int a, int b)
-{
+static int max(int a, int b) {
   if (a > b)
     return a;
 
@@ -134,8 +121,7 @@ static int max(int a, int b)
  * Output C-language code that can be used to include
  * converted font into uGUI application.
  */
-static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,int bitsPerPixel)
-{
+static void dumpFont(const UG_FONT* font, const char* fontFile, float fontSize, int bitsPerPixel) {
   int bytesPerChar;
   int ch;
   int current;
@@ -147,9 +133,9 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
   char* ptr;
   FILE* out;
 
-/*
- * Generate name for font by stripping path and suffix from filename.
- */
+  /*
+   * Generate name for font by stripping path and suffix from filename.
+   */
   baseName = fontFile;
   ptr = strrchr(baseName, '/');
   if (ptr)
@@ -161,10 +147,8 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
   if (ptr)
     *ptr = '\0';
 
-
   sprintf(fontName, "%s_%dX%d", baseName, font->char_width, font->char_height);
   sprintf(outFileName, "%s_%dX%d.c", baseName, font->char_width, font->char_height);
-
 
   out = fopen(outFileName, "w");
   if (!out) {
@@ -173,38 +157,32 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
     exit(2);
   }
 
-
   /*
    * First output character bitmaps.
-  */
-  switch(bitsPerPixel)
-  {
-    case 1:
-    {
-        // Round up to full bytes
-        bytesPerChar = font->char_height * ((font->char_width +7)/ 8);
-    }break;
+   */
+  switch (bitsPerPixel) {
+  case 1: {
+    // Round up to full bytes
+    bytesPerChar = font->char_height * ((font->char_width + 7) / 8);
+  } break;
 
-    case 8:
-    {
-        bytesPerChar = font->char_height * font->char_width;
-    }break;
+  case 8: {
+    bytesPerChar = font->char_height * font->char_width;
+  } break;
   }
 
-
-
   fprintf(out, "// Converted from %s\n", fontFile);
-  fprintf(out, "//  --size %d\n", (int)fontSize);
+  fprintf(out, "//  --size %d\n", (int) fontSize);
   if (dpi > 0)
     fprintf(out, "//  --dpi %d\n", dpi);
-  fprintf(out, "//  --bpp %d\n", (int)bitsPerPixel);
-
+  fprintf(out, "//  --bpp %d\n", (int) bitsPerPixel);
 
   fprintf(out, "// For copyright, see original font file.\n");
   fprintf(out, "\n#include \"ugui.h\"\n\n");
 
-  fprintf(out, "static __UG_FONT_DATA unsigned char fontBits_%s[%d][%d] = {\n", fontName, font->end_char - font->start_char + 1, bytesPerChar);
-  fprintf(out, "%*c// Hex     Dec   Char\n",(bytesPerChar*5)-1+7, ' ');
+  fprintf(out, "static __UG_FONT_DATA unsigned char fontBits_%s[%d][%d] = {\n", fontName,
+          font->end_char - font->start_char + 1, bytesPerChar);
+  fprintf(out, "%*c// Hex     Dec   Char\n", (bytesPerChar * 5) - 1 + 7, ' ');
   current = 0;
   for (ch = font->start_char; ch <= font->end_char; ch++) {
 
@@ -223,17 +201,17 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
       fprintf(out, ",");
     else
       fprintf(out, " ");
-  
-	char utf8[5];
-	utf8_encode(utf8, ch);
+
+    char utf8[5];
+    utf8_encode(utf8, ch);
     fprintf(out, " // 0x%-4X  %-4d  '%s'\n", ch, ch, utf8);
   }
 
   fprintf(out, "};\n");
 
-/*
- * Next output character widths.
- */
+  /*
+   * Next output character widths.
+   */
   fprintf(out, "static const UG_U8 fontWidths_%s[] = {\n", fontName);
 
   for (ch = font->start_char; ch <= font->end_char; ch++) {
@@ -246,17 +224,12 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
 
   fprintf(out, "};\n");
 
-/*
- * Last, output UG_FONT structure.
- */
-  fprintf(out, "const UG_FONT font_%s = { (unsigned char*)fontBits_%s, FONT_TYPE_%dBPP, %d, %d, %d, %d, fontWidths_%s };\n",
-          fontName,
-          fontName,
-          bitsPerPixel,
-          font->char_width,
-          font->char_height,
-          font->start_char,
-          font->end_char,
+  /*
+   * Last, output UG_FONT structure.
+   */
+  fprintf(out,
+          "const UG_FONT font_%s = { (unsigned char*)fontBits_%s, FONT_TYPE_%dBPP, %d, %d, %d, %d, fontWidths_%s };\n",
+          fontName, fontName, bitsPerPixel, font->char_width, font->char_height, font->start_char, font->end_char,
           fontName);
 
   fclose(out);
@@ -269,41 +242,38 @@ static void dumpFont(const UG_FONT * font, const char* fontFile, float fontSize,
     exit(2);
   }
 
-/*
- * Output extern declaration to header file.
- */
+  /*
+   * Output extern declaration to header file.
+   */
   fprintf(out, "extern const UG_FONT font_%s;\n", fontName);
   fclose(out);
 }
 
 static UG_FONT newFont;
 
-static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPerPixel)
-{
-  int 		error;
-  FT_Face 	face;
-  FT_Library 	library;
-  int   	bpp_mul;
+static UG_FONT* convertFont(const char* font, int dpi, float fontSize, int bitsPerPixel) {
+  int error;
+  FT_Face face;
+  FT_Library library;
+  int bpp_mul;
 
-
-  switch(bitsPerPixel)
-  {
-    case 1: bpp_mul = 1; break;
-    case 8: bpp_mul = 16; break;
-    default:
-    {
-       fprintf(stderr, "Bits per pixel must be 1 or 8, not %d!!\n", bitsPerPixel);
-       exit(1);
-    }break;
-
+  switch (bitsPerPixel) {
+  case 1:
+    bpp_mul = 1;
+    break;
+  case 8:
+    bpp_mul = 16;
+    break;
+  default: {
+    fprintf(stderr, "Bits per pixel must be 1 or 8, not %d!!\n", bitsPerPixel);
+    exit(1);
+  } break;
   }
 
-
-
-/*
- * Initialize freetype library, load the font
- * and set output character size.
- */
+  /*
+   * Initialize freetype library, load the font
+   * and set output character size.
+   */
   error = FT_Init_FreeType(&library);
   if (error) {
 
@@ -311,19 +281,16 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
     exit(1);
   }
 
-  error = FT_New_Face(library,
-                      font,
-                      0,
-                      &face);
+  error = FT_New_Face(library, font, 0, &face);
   if (error) {
 
     fprintf(stderr, "ew faceerr %d\n", error);
     exit(1);
   }
 
-/*
- * If DPI is not given, use pixes to specify the size.
- */
+  /*
+   * If DPI is not given, use pixes to specify the size.
+   */
   if (dpi > 0)
     error = FT_Set_Char_Size(face, 0, fontSize * 64 * bpp_mul, dpi, dpi);
   else
@@ -334,7 +301,7 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
     exit(1);
   }
 
-  int i, j,i_idx,j_idx;
+  int i, j, i_idx, j_idx;
   int coverage;
   int ch;
   int maxWidth = 0;
@@ -344,10 +311,10 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
   int bytesPerChar;
   int bytesPerRow;
 
-/*
- * First found out how big character bitmap is needed. Every character
- * must fit into it so that we can obtain correct character positioning.
- */
+  /*
+   * First found out how big character bitmap is needed. Every character
+   * must fit into it so that we can obtain correct character positioning.
+   */
   for (ch = minChar; ch <= maxChar; ch++) {
 
     int ascent;
@@ -376,41 +343,40 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
   maxWidth = (maxWidth + (bpp_mul - 1)) / bpp_mul;
   maxHeight = (maxAscent + maxDescent + (bpp_mul - 1)) / bpp_mul;
 
-  switch(bitsPerPixel)
-  {
-    case 1:
-    {
-        // Round up to full bytes
-        bytesPerRow = (maxWidth +7 )/ 8;
-    }break;
+  switch (bitsPerPixel) {
+  case 1: {
+    // Round up to full bytes
+    bytesPerRow = (maxWidth + 7) / 8;
+  } break;
 
-    case 8:
-    {
-        bytesPerRow = maxWidth;
-    }break;
+  case 8: {
+    bytesPerRow = maxWidth;
+  } break;
   }
-
 
   bytesPerChar = bytesPerRow * maxHeight;
 
   newFont.p = malloc(bytesPerChar * (maxChar - minChar + 1));
   memset(newFont.p, '\0', bytesPerChar * (maxChar - minChar + 1));
 
-  switch(bitsPerPixel)
-  {
-        case 1: newFont.font_type = FONT_TYPE_1BPP; break;
-        case 8: newFont.font_type = FONT_TYPE_8BPP; break;
+  switch (bitsPerPixel) {
+  case 1:
+    newFont.font_type = FONT_TYPE_1BPP;
+    break;
+  case 8:
+    newFont.font_type = FONT_TYPE_8BPP;
+    break;
   }
 
-  newFont.char_width  = maxWidth;
+  newFont.char_width = maxWidth;
   newFont.char_height = maxHeight;
-  newFont.start_char  = minChar;
-  newFont.end_char    = maxChar;
-  newFont.widths      = malloc(maxChar - minChar + 1);
+  newFont.start_char = minChar;
+  newFont.end_char = maxChar;
+  newFont.widths = malloc(maxChar - minChar + 1);
 
-/*
- * Render each character.
- */
+  /*
+   * Render each character.
+   */
   for (ch = minChar; ch <= maxChar; ch++) {
 
     error = FT_Load_Char(face, ch, FT_LOAD_RENDER | FT_LOAD_TARGET_MONO);
@@ -421,64 +387,55 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
     }
 
     for (i = 0; i < (face->glyph->bitmap.rows + (bpp_mul - 1)) / bpp_mul; i++)
-      for (j = 0; j < (face->glyph->bitmap.width + (bpp_mul - 1))/ bpp_mul; j++) {
+      for (j = 0; j < (face->glyph->bitmap.width + (bpp_mul - 1)) / bpp_mul; j++) {
 
         coverage = 0;
 
-        for(i_idx =0; i_idx < bpp_mul;i_idx++) {
-            if (i * bpp_mul + i_idx >= face->glyph->bitmap.rows) {
-                break;
+        for (i_idx = 0; i_idx < bpp_mul; i_idx++) {
+          if (i * bpp_mul + i_idx >= face->glyph->bitmap.rows) {
+            break;
+          }
+          for (j_idx = 0; j_idx < bpp_mul; j_idx++) {
+            if (j * bpp_mul + j_idx >= face->glyph->bitmap.width) {
+              break;
             }
-            for(j_idx = 0; j_idx < bpp_mul;j_idx++) {
-                if (j * bpp_mul + j_idx >= face->glyph->bitmap.width) {
-                  break;
-                }
 
-                uint8_t *bits = (uint8_t *) face->glyph->bitmap.buffer;
-                uint8_t b = bits[(i*bpp_mul+i_idx) * face->glyph->bitmap.pitch + ((j*bpp_mul+j_idx) / 8)];
+            uint8_t* bits = (uint8_t*) face->glyph->bitmap.buffer;
+            uint8_t b = bits[(i * bpp_mul + i_idx) * face->glyph->bitmap.pitch + ((j * bpp_mul + j_idx) / 8)];
 
-
-                if (b & (1 << (7 - ((j*bpp_mul+j_idx) % 8))))
-                {
-                    coverage ++;
-                }
-
+            if (b & (1 << (7 - ((j * bpp_mul + j_idx) % 8)))) {
+              coverage++;
             }
+          }
         }
-
 
         /*
          * Output character to correct position in bitmap
          */
 
-        int xpos, ypos,ind;
+        int xpos, ypos, ind;
 
         xpos = j + ((face->glyph->bitmap_left + (bpp_mul - 1)) / bpp_mul);
         ypos = ((maxAscent + (bpp_mul - 1)) / bpp_mul) + i - ((face->glyph->bitmap_top + (bpp_mul - 1)) / bpp_mul);
 
+        switch (bitsPerPixel) {
 
-        switch(bitsPerPixel)
-        {
+        case 1: {
 
-            case 1:
-            {
+          ind = ypos * bytesPerRow;
+          ind += xpos / 8;
 
-                ind = ypos * bytesPerRow;
-                ind += xpos / 8;
+          if (coverage != 0)
+            newFont.p[((ch - minChar) * bytesPerChar) + ind] |= (1 << ((xpos % 8)));
+        } break;
 
+        case 8: {
+          ind = ypos * bytesPerRow;
+          ind += xpos;
 
-                if (coverage !=0)
-                    newFont.p[((ch - minChar) * bytesPerChar) + ind] |= (1 << ((xpos % 8)));
-            }break;
+          newFont.p[((ch - minChar) * bytesPerChar) + ind] = (255 * coverage) / 256; // need to be 0..255 range
 
-            case 8:
-            {
-                ind = ypos * bytesPerRow;
-                ind += xpos ;
-
-                newFont.p[((ch - minChar) * bytesPerChar) + ind  ] = (255 * coverage)/256; // need to be 0..255 range
-
-            }break;
+        } break;
         }
       }
 
@@ -486,7 +443,6 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
      * Save character width, freetype uses 1/64 as units for it.
      */
     newFont.widths[ch - minChar] = (face->glyph->advance.x >> 6) / bpp_mul;
-
   }
 
   return &newFont;
@@ -495,8 +451,7 @@ static UG_FONT *convertFont(const char *font, int dpi, float fontSize,int bitsPe
 /*
  * Draw a simple sample of new font with uGUI.
  */
-static void showFont(const UG_FONT * font, char* text)
-{
+static void showFont(const UG_FONT* font, char* text) {
   UG_Init(&gui, drawPixel, SCREEN_WIDTH, SCREEN_HEIGHT);
 
   UG_FillScreen(C_WHITE);
@@ -515,29 +470,27 @@ static int dump;
 static char* fontFile = NULL;
 static char* showText = NULL;
 
- /* options descriptor */
-static struct option longopts[] = {
-  {"show", required_argument, NULL, 'a'},
-  {"dump", no_argument, &dump, 1},
-  {"dpi", required_argument, NULL, 'd'},
-  {"minchar", required_argument, NULL, 'z'},
-  {"maxchar", required_argument, NULL, 'e'},
-  {"size", required_argument, NULL, 's'},
-  {"font", required_argument, NULL, 'f'},
-  {"bpp", optional_argument, NULL, 'b'},
-  {NULL, 0, NULL, 0}
-};
+/* options descriptor */
+static struct option longopts[] = {{"show", required_argument, NULL, 'a'},
+                                   {"dump", no_argument, &dump, 1},
+                                   {"dpi", required_argument, NULL, 'd'},
+                                   {"minchar", required_argument, NULL, 'z'},
+                                   {"maxchar", required_argument, NULL, 'e'},
+                                   {"size", required_argument, NULL, 's'},
+                                   {"font", required_argument, NULL, 'f'},
+                                   {"bpp", optional_argument, NULL, 'b'},
+                                   {NULL, 0, NULL, 0}};
 
-static void usage()
-{
-  fprintf(stderr, "ttf2ugui {--show text|--dump} --font=fontfile [--dpi=displaydpi] --size=fontsize [--bpp=bitsperpixel] [--minchar=charnumber] [--maxchar=charnumber]\n");
+static void usage() {
+  fprintf(stderr, "ttf2ugui {--show text|--dump} --font=fontfile [--dpi=displaydpi] --size=fontsize "
+                  "[--bpp=bitsperpixel] [--minchar=charnumber] [--maxchar=charnumber]\n");
   fprintf(stderr, "If --dpi is not given, font size is assumed to be pixels.\n");
   fprintf(stderr, "Bits per pixel must be 1 or 8. Default is 1.\n");
-  fprintf(stderr, "Char numbers use unicode or ascii encoding in decimal representation (ex. 'a' = 97 ), default is 32-126.\n");
+  fprintf(stderr,
+          "Char numbers use unicode or ascii encoding in decimal representation (ex. 'a' = 97 ), default is 32-126.\n");
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
   int ch;
 
   while ((ch = getopt_long(argc, argv, "", longopts, NULL)) != -1) {
@@ -562,8 +515,7 @@ int main(int argc, char **argv)
     case 'b':
       bpp = atoi(optarg);
 
-      if( (bpp !=1) && (bpp !=8) )
-      {
+      if ((bpp != 1) && (bpp != 8)) {
         fprintf(stderr, "Bits per pixel must be 1 or 8. Default is 1.\n");
         exit(1);
       }
@@ -595,13 +547,13 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  const UG_FONT *font;
+  const UG_FONT* font;
 
-  font = convertFont(fontFile, dpi, fontSize,bpp);
+  font = convertFont(fontFile, dpi, fontSize, bpp);
 
   if (showText)
     showFont(font, showText);
 
   if (dump)
-    dumpFont(font, fontFile, fontSize,bpp);
+    dumpFont(font, fontFile, fontSize, bpp);
 }
